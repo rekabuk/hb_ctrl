@@ -10,19 +10,20 @@
 class HB_Ctrl : public rclcpp::Node
 {
   public:
-    HB_Ctrl() : Node("HB Control")
+    HB_Ctrl() : Node("HB_Control")
     {
       gpio_drver = pigpio_start(NULL, NULL);
       
       if (gpio_drver >= 0)
       {
-        set_mode(gpio_drver, pin, PI_OUTPUT);
+        set_mode(gpio_drver, gpio, PI_OUTPUT);
         subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
                     "joy", rclcpp::QoS(10), std::bind(&HB_Ctrl::topic_callback, this, std::placeholders::_1));
-      }
+        RCLCPP_INFO(this->get_logger(), "Connected to pigpiod");
+     }
       else
       {
-        RCLCPP_ERROR(this->get_logger(), "cannot connect pigpiod");
+        RCLCPP_ERROR(this->get_logger(), "Cannot connect pigpiod");
         rclcpp::shutdown();
         exit(1);
       }
@@ -31,19 +32,19 @@ class HB_Ctrl : public rclcpp::Node
 
   private:
     int gpio_drver;
-    int pin = 17;
+    int gpio = 17;
 
     void topic_callback(const sensor_msgs::msg::Joy::SharedPtr joy_msg) const
     {
-        if (joy_msg->buttons[5])
+        if (joy_msg->buttons[5] == 1)
         {
-          gpio_write(gpio_drver, pin, 1);
-          RCLCPP_INFO(this->get_logger(), "Button 5 down, Write 1 on GPIO-%d", pin);
+          gpio_write(gpio_drver, gpio, 1);
+          RCLCPP_INFO(this->get_logger(), "Button 5 down, Write 1 on GPIO-%d", gpio);
         }
-        if (joy_msg->buttons[0])
+        if (joy_msg->buttons[5] == 0)
         {
-          gpio_write(gpio_drver, pin, 0);
-          RCLCPP_INFO(this->get_logger(), "Button 5 ip, Write 0 on GPIO-%d", pin);
+          gpio_write(gpio_drver, gpio, 0);
+          RCLCPP_INFO(this->get_logger(), "Button 5 up, Write 0 on GPIO-%d", gpio);
         }
     }
 
